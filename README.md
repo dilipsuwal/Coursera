@@ -11,8 +11,9 @@ ML_Writeup_Assignment.pdf can also be open to view the project report, just in c
 
 For Course Project Prediction Quiz Portion, identified base model "random forest machine learning algorithm" has been applied to the 20 test cases available in the test data and we can see the prediction for 20 cases given velow.
 
-> predictionRF <- predict(fit.rf, dt_testing)
-> predictionRF
- [1] B A B A A E D B A A B C B A E E A B B B
+predictionRF <- predict(fit.rf, TestingSet)
+
+predictionRF [1] B A B A A E D B A A B C B A E E A B B B
+
 Levels: A B C D E
  
