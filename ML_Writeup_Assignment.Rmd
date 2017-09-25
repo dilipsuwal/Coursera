@@ -1,0 +1,158 @@
+---
+title: "Prediction Assignment Writeup"
+author: "Dilip Suwal"
+date: "September 24, 2017"
+output: html_document
+---
+
+# Machine Learning: Prediction Assignment Writeup
+
+### Introduction
+
+This document summarizes the work done for the Prediction Assignment Writeup project for the Coursera Practical Machine Learning course. It decribes the machine learning methods to predict the manner in which participants did exercise.The data for this project involves readings from wearable fitness trackers such as Jawbone Up, Nike FuelBand, and Fitbit.
+
+### Data
+
+The training data for this project are available here: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+Both training and test data have already been dowloaded to my machine at the following location:
+C:\\WorkSpace\\DataScience\\8.MachineLearning\\W4\\Assignment
+
+### Environment Setup
+```{r EnvironmentSetup}
+setwd("C:/WorkSpace/DataScience/8.MachineLearning/W4/Assignment")
+library(caret)
+```
+
+### Loading Data
+```{r LoadingData}
+TrainingSet <- read.csv("pml-training.csv", na.strings=c("NA",""), strip.white=T)
+TestingSet <- read.csv("pml-testing.csv", na.strings=c("NA",""), strip.white=T)
+```
+
+### Data Cleansing
+
+Now, let us remove all columns that contains NA and remove features that are not in the testing dataset. Since the testing dataset has no time-dependence, these values are useless and can be disregarded. Cosidering this, let us remove the first 7 features since they are related to the time-series.
+
+```{r DataCleansing}
+features <- names(TestingSet[,colSums(is.na(TestingSet)) == 0])[8:59]
+
+# Only use features used in testing cases.
+TrainingSet <- TrainingSet[,c(features,"classe")]
+TestingSet <- TestingSet[,c(features,"problem_id")]
+dim(TrainingSet); dim(TestingSet);
+```
+
+### Partitioning the Data Set
+
+Let us now split data into a training data set and a testing data set with the ratio of 60 to 40. This will allow us to estimate the out of sample error of our predictor.
+
+```{r SplitDataSet}
+inTrain <- createDataPartition(TrainingSet$classe, p=0.6, list=FALSE)
+training <- TrainingSet[inTrain,]
+testing <- TrainingSet[-inTrain,]
+dim(training); dim(testing);
+```
+
+### Building Model
+
+In order to predict with high accuracy about the manner in which participants did exercise, we will evalute the following five different algorithms
+
+1. Random Forest (RF)
+2. Classification and Regression Trees (CART)
+3. Linear Discriminant Analysis (LDA)
+4. k-Nearest Neighbors (kNN)
+5. Support Vector Machines (SVM) with a linear kernel
+
+Before building models, let us prepare the cross validation with 5 fold. This will split our data set into 5 parts, train in 4 and test on 1.
+
+```{r CrossValidationt}
+control <- trainControl(method="cv", number=5)
+metric <- "Accuracy"
+```
+Now, let us build five models as stated above.
+
+```{r BuildModels, results="hide"}
+
+#Random Forest
+set.seed(777)
+fit.rf <- train(classe~., data=training, method="rf", metric=metric, trControl=control)
+
+#Classification and Regression Trees
+set.seed(777)
+fit.cart <- train(classe~., data=training, method="rpart", metric=metric, trControl=control)
+
+#Linear Discriminant Analysis
+set.seed(777)
+fit.lda <- train(classe~., data=training, method="lda", metric=metric, trControl=control)
+
+#k-Nearest Neighbors
+set.seed(777)
+fit.knn <- train(classe~., data=training, method="knn", metric=metric, trControl=control)
+
+#Support Vector Machines
+set.seed(777)
+fit.svm <- train(classe~., data=training, method="svmRadial", metric=metric, trControl=control)
+
+```
+
+### Select Best Model
+
+```{r SelectModel}
+results <- resamples(list(rf=fit.rf, cart=fit.cart, lda=fit.lda, knn=fit.knn, svm=fit.svm))
+summary(results)
+```
+
+From the above analysis summary, we can see that the most accurate model is random forest model. This we can visualize as below as well.
+
+```{r ModelComapre}
+# compare accuracy of models
+dotplot(results)
+```
+
+The result for random forest model can be summarized as below.
+
+```{r RandomForestSummary}
+# compare accuracy of models
+print(fit.rf)
+```
+
+### Make Prediction
+
+As random forest model is the most accurate one, we will now estimate the accuracy of the model with the the testing data set. This will give us an independent final check on the accuracy of the best model.
+let us run the random forest model directly on the testing set and summarize the results in a confusion matrix.
+
+
+```{r MakePrediction}
+# Estimate the accuracy of the model on testing data set
+predictions <- predict(fit.rf, testing)
+confusionMatrix(predictions, testing$classe)
+```
+
+# Conclusion
+
+From above analysis summary, we can see that the accuracy of random forest model is 98.94%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
